@@ -38,3 +38,29 @@ def test_read_root_html_content_type():
     client = TestClient(app)
     response = client.get('/html')
     assert response.headers['content-type'].startswith('text/html')
+
+
+def test_created_user_return_201():
+    client = TestClient(app)
+    response = client.post(
+        '/users',
+        json={
+            'username': 'ana',
+            'email': 'ana@example.com',
+            'password': 'senha-da-ana',
+        },
+    )
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.json() == {
+        'username': 'ana',
+        'email': 'ana@example.com',
+        'id': 1,
+    }
+
+
+def test_created_user_fail_not_username():
+    client = TestClient(app)
+    response = client.post(
+        '/users', json={'email': 'user@example.com', 'password': 'string'}
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
