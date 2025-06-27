@@ -17,13 +17,18 @@ def client():
 
 @pytest.fixture
 def session():
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine(
+        'sqlite:///:memory:',
+        connect_args={'check_same_thread': False},
+        echo=False,
+    )
     table_registry.metadata.create_all(engine)
 
     with Session(engine) as session:
         yield session
 
     table_registry.metadata.drop_all(engine)
+    engine.dispose()  # Fecha todas as conexoes do pool
 
 
 @contextmanager
