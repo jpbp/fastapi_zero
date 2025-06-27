@@ -11,3 +11,5 @@ poetry add 'fastapi[standard]'
 poetry shell
 fastapi dev fast_zero/app.py
 poetry add --group dev pytest pytest-cov taskipy ruff
+
+#ORM -> (M)apeamento de (O)bjetos (R)elacionais

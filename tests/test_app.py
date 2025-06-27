@@ -121,18 +121,12 @@ def test_update_user_with_id_invalid(client):
 
 
 def test_delete_user_with_id_valid(client):
-    response = client.delete(
-        '/users/1'
-    )
+    response = client.delete('/users/1')
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'message': 'User Deleted!'
-    }
+    assert response.json() == {'message': 'User Deleted!'}
 
 
 def test_delete_user_with_id_invalid(client):
-    response = client.delete(
-        '/users/1'
-    )
+    response = client.delete('/users/1')
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {'detail': 'User not found!'}
