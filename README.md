@@ -762,5 +762,3 @@ Para expandir este projeto, considere:
 **Autor:** jpbp  
 **Email:** jppenna04@gmail.com  
 **Versão:** 0.1.0
-
-> Este README serve como guia completo para desenvolvimento de APIs com FastAPI. Use como referência para seus próximos projetos!
