@@ -3,6 +3,7 @@ from http import HTTPStatus
 from fastapi.testclient import TestClient
 
 from fastapi_zero.app import app
+from fastapi_zero.schemas import UserPublic
 
 
 def test_root_deve_retornar_ola_mundo(client):
@@ -103,14 +104,11 @@ def test_created_user_fail_not_username(client):
 
 
 def test_read_users(client, users):
+    user1 = UserPublic.model_validate(users[0]).model_dump()
+    user2 = UserPublic.model_validate(users[1]).model_dump()
     response = client.get('/users/')
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'users': [
-            {'username': 'ana', 'email': 'ana@example.com', 'id': 1},
-            {'username': 'jp', 'email': 'jp@example.com', 'id': 2},
-        ]
-    }
+    assert response.json() == {'users': [user1, user2]}
 
 
 def test_read_users_empty(client):
@@ -120,7 +118,7 @@ def test_read_users_empty(client):
 
 
 def test_read_user_with_id_valid(client, users):
-    response = client.get('/users/1')
+    response = client.get(f'/users/{users[0].id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
         'username': 'ana',
@@ -137,7 +135,7 @@ def test_read_user_with_id_invalid(client, users):
 
 def test_update_user_with_id_valid(client, users):
     response = client.put(
-        '/users/2',
+        f'/users/{users[1].id}',
         json={
             'username': 'jp-put',
             'email': 'jp-put@example.com',
@@ -150,6 +148,40 @@ def test_update_user_with_id_valid(client, users):
         'email': 'jp-put@example.com',
         'id': 2,
     }
+
+
+def test_update_user_integrity_error_email_exists(client, users):
+    response = client.put(
+        f'/users/{users[1].id}',
+        json={
+            'username': 'jp',
+            'email': 'ana@example.com',
+            'password': 'senha-do-jp-put',
+        },
+    )
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {'detail': 'Email already exists!'}
+
+
+def test_update_user_integrity_error_dunossaudo(client, users):
+    response = client.post(
+        '/users/',
+        json={
+            'username': 'fausto',
+            'email': 'fausto@example.com',
+            'password': 'senha-do-fausto',
+        },
+    )
+    response = client.put(
+        f'/users/{users[1].id}',
+        json={
+            'username': 'fausto',
+            'email': 'fausto-teste@example.com',
+            'password': 'senha-do-fausto',
+        },
+    )
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {'detail': 'Username already exists!'}
 
 
 def test_update_user_with_id_invalid(client, users):
@@ -166,10 +198,10 @@ def test_update_user_with_id_invalid(client, users):
 
 
 def test_delete_user_with_id_valid(client, users):
-    response = client.delete('/users/1')
+    response = client.delete(f'/users/{users[0].id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'User Deleted!'}
-    response = client.delete('/users/2')
+    response = client.delete(f'/users/{users[1].id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'User Deleted!'}
 
