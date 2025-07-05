@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ from fastapi_zero.schemas import (
     UserPublic,
     UserSchema,
 )
+from fastapi_zero.security import get_passaword_hash, verify_password
 
 app = FastAPI(title='Minha Api Bala!')
 
@@ -59,7 +61,7 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
     user_db = User(
         username=user.username,
         email=user.email,
-        password=user.password,
+        password=get_passaword_hash(user.password),
     )
     session.add(user_db)
     session.commit()
@@ -115,7 +117,7 @@ def update_user(
     if not existingUser:
         user_db.username = user.username
         user_db.email = user.email
-        user_db.password = user.password
+        user_db.password = get_passaword_hash(user.password)
         session.commit()
         session.refresh(user_db)
         return user_db
@@ -142,3 +144,23 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     session.delete(user_db)
     session.commit()
     return {'message': 'User Deleted!'}
+
+
+@app.post('/token')
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
+    user = session.scalar(select(User).where(User.email == form_data.username))
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail='Incorrect email or password',
+        )
+
+    if not verify_password(form_data.password, user.password):
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail='Incorrect email or password',
+        )
+    
