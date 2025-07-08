@@ -10,11 +10,17 @@ from fastapi_zero.database import get_session
 from fastapi_zero.models import User
 from fastapi_zero.schemas import (
     Message,
+    Token,
     UserList,
     UserPublic,
     UserSchema,
 )
-from fastapi_zero.security import get_passaword_hash, verify_password
+from fastapi_zero.security import (
+    create_access_token,
+    get_current_user,
+    get_passaword_hash,
+    verify_password,
+)
 
 app = FastAPI(title='Minha Api Bala!')
 
@@ -72,7 +78,10 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
 
 @app.get('/users/', status_code=HTTPStatus.OK, response_model=UserList)
 def read_users(
-    limit: int = 10, offset: int = 0, session: Session = Depends(get_session)
+    limit: int = 10,
+    offset: int = 0,
+    session: Session = Depends(get_session),
+    current_user=Depends(get_current_user),
 ):
     users = session.scalars(select(User).limit(limit).offset(offset))
     return {'users': users}
@@ -94,7 +103,10 @@ def read_user_for_id(user_id: int, session: Session = Depends(get_session)):
     '/users/{user_id}/', status_code=HTTPStatus.OK, response_model=UserPublic
 )
 def update_user(
-    user_id: int, user: UserSchema, session: Session = Depends(get_session)
+    user_id: int, 
+    user: UserSchema, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
 ):
     user_db = session.scalar(select(User).where(User.id == user_id))
     if not user_db:
@@ -146,7 +158,7 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     return {'message': 'User Deleted!'}
 
 
-@app.post('/token')
+@app.post('/token', response_model=Token)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
@@ -155,12 +167,13 @@ def login_for_access_token(
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Incorrect email or password',
+            detail='Incorrect email',
         )
-
     if not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Incorrect email or password',
+            detail='Incorrect password',
         )
-    
+
+    access_token = create_access_token({'sub': user.email})
+    return {'access_token': access_token, 'token_type': 'Bearer'}

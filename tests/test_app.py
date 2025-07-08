@@ -103,18 +103,14 @@ def test_created_user_fail_not_username(client):
     assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_read_users(client, users):
+def test_read_users(client, users, token):
     user1 = UserPublic.model_validate(users[0]).model_dump()
     user2 = UserPublic.model_validate(users[1]).model_dump()
-    response = client.get('/users/')
+    response = client.get(
+        '/users/', headers={'Authorization': f'Bearer {token}'}
+    )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'users': [user1, user2]}
-
-
-def test_read_users_empty(client):
-    response = client.get('/users/')
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() == {'users': []}
 
 
 def test_read_user_with_id_valid(client, users):
@@ -210,3 +206,15 @@ def test_delete_user_with_id_invalid(client, users):
     response = client.delete('/users/3')
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {'detail': 'User not found!'}
+
+
+def test_login_for_access_token_valid(client, users):
+    response = client.post(
+        '/token',
+        data={'username': users[0].email, 'password': users[0].clean_password},
+    )
+
+    token = response.json()
+    assert response.status_code == HTTPStatus.OK
+    assert 'access_token' in token
+    assert token['token_type'] == 'Bearer'
