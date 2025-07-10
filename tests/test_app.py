@@ -129,39 +129,42 @@ def test_read_user_with_id_invalid(client, users):
     assert response.json() == {'detail': 'User not found!'}
 
 
-def test_update_user_with_id_valid(client, users):
+def test_update_user_with_id_valid(client, users, token):
     response = client.put(
-        f'/users/{users[1].id}',
+        f'/users/{users[0].id}',
+        headers={'Authorization': f'Bearer {token}'},
         json={
-            'username': 'jp-put',
-            'email': 'jp-put@example.com',
-            'password': 'senha-do-jp-put',
+            'username': 'ana-put',
+            'email': 'ana-put@example.com',
+            'password': 'senha-da-ana-put',
         },
     )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'jp-put',
-        'email': 'jp-put@example.com',
-        'id': 2,
+        'username': 'ana-put',
+        'email': 'ana-put@example.com',
+        'id': 1,
     }
 
 
-def test_update_user_integrity_error_email_exists(client, users):
+def test_update_user_integrity_error_email_exists(client, users, token):
     response = client.put(
-        f'/users/{users[1].id}',
+        f'/users/{users[0].id}',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'jp',
-            'email': 'ana@example.com',
+            'email': 'teste@example.com',
             'password': 'senha-do-jp-put',
         },
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {'detail': 'Email already exists!'}
+    assert response.json() == {'detail': 'Username or email already exists!'}
 
 
-def test_update_user_integrity_error_dunossaudo(client, users):
+def test_update_user_integrity_error_dunossaudo(client, users, token):
     response = client.post(
         '/users/',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'fausto',
             'email': 'fausto@example.com',
@@ -169,7 +172,8 @@ def test_update_user_integrity_error_dunossaudo(client, users):
         },
     )
     response = client.put(
-        f'/users/{users[1].id}',
+        f'/users/{users[0].id}',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'fausto',
             'email': 'fausto-teste@example.com',
@@ -177,35 +181,37 @@ def test_update_user_integrity_error_dunossaudo(client, users):
         },
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {'detail': 'Username already exists!'}
+    assert response.json() == {'detail': 'Username or email already exists!'}
 
 
-def test_update_user_with_id_invalid(client, users):
+def test_update_user_forbidden(client, token):
     response = client.put(
         '/users/3',
+        headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'jp-teste',
             'email': 'jp-teste@example.com',
             'password': 'senha-do-jp-teste',
         },
     )
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'User not found!'}
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not Enough permissions'}
 
 
-def test_delete_user_with_id_valid(client, users):
-    response = client.delete(f'/users/{users[0].id}')
+def test_delete_user_with_id_valid(client, users, token):
+    response = client.delete(
+        f'/users/{users[0].id}', headers={'Authorization': f'Bearer {token}'}
+    )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'User Deleted!'}
-    response = client.delete(f'/users/{users[1].id}')
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() == {'message': 'User Deleted!'}
 
 
-def test_delete_user_with_id_invalid(client, users):
-    response = client.delete('/users/3')
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'User not found!'}
+def test_delete_user_with_id_UNAUTHORIZED(client, token):
+    response = client.delete(
+        '/users/3', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not enough permission!'}
 
 
 def test_login_for_access_token_valid(client, users):
