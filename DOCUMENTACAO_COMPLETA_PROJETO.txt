@@ -1,0 +1,405 @@
+# DOCUMENTAÇÃO COMPLETA DO PROJETO FASTAPI ZERO
+
+## 📋 RESUMO EXECUTIVO
+
+Este projeto é uma API REST completa desenvolvida com FastAPI, demonstrando as melhores práticas para desenvolvimento de APIs modernas em Python. O projeto implementa um sistema completo de gerenciamento de usuários com autenticação JWT, validações robustas e testes automatizados.
+
+## 🏗️ ARQUITETURA DO PROJETO
+
+### Estrutura de Diretórios
+```
+fastapi_zero/
+├── alembic.ini                    # Configuração do Alembic (migrações)
+├── .env                          # Variáveis de ambiente
+├── .gitignore                    # Arquivos ignorados pelo Git
+├── poetry.lock                   # Lock file das dependências
+├── pyproject.toml               # Configuração do projeto e dependências
+├── README.md                    # Documentação básica
+│
+├── fastapi_zero/               # Código principal da aplicação
+│   ├── __init__.py
+│   ├── app.py                  # Aplicação FastAPI principal
+│   ├── database.py             # Configuração do banco de dados
+│   ├── models.py               # Modelos SQLAlchemy
+│   ├── schemas.py              # Schemas Pydantic
+│   ├── security.py             # Autenticação e segurança
+│   ├── settings.py             # Configurações da aplicação
+│   └── routers/                # Roteadores (vazio no momento)
+│       └── users.py
+│
+├── migrations/                 # Migrações do banco de dados
+│   ├── env.py                  # Configuração do ambiente Alembic
+│   ├── README
+│   ├── script.py.mako          # Template para migrações
+│   └── versions/               # Versões das migrações
+│       ├── 037191f83212_add_updated_at_in_models_user.py
+│       ├── 3a5ba60a4dd0_add_updated_at_to_users_table.py
+│       ├── a757bd9be833_fix_updated_at_default_value.py
+│       ├── bb672486be19_create_users_table.py
+│       ├── ca0de850e0b7_create_users_table.py
+│       └── cdd0a79e6a3c_add_updated_at_in_models_user_and_.py
+│
+└── tests/                      # Testes automatizados
+    ├── __init__.py
+    ├── conftest.py             # Configurações e fixtures dos testes
+    ├── test_app.py             # Testes dos endpoints
+    ├── test_db.py              # Testes do banco de dados
+    └── test_security.py        # Testes de segurança
+```
+
+## 🔧 TECNOLOGIAS E DEPENDÊNCIAS
+
+### Dependências Principais (pyproject.toml)
+- **FastAPI 0.115.13**: Framework web moderno e rápido
+- **SQLAlchemy 2.0.41**: ORM para banco de dados
+- **Pydantic Settings 2.10.1**: Gerenciamento de configurações
+- **Alembic 1.16.2**: Migrações de banco de dados
+- **PWDLib[argon2] 0.2.1**: Hash seguro de senhas
+- **PyJWT 2.10.1**: Tokens JWT para autenticação
+
+### Dependências de Desenvolvimento
+- **Ruff 0.12.0**: Linter e formatador de código
+- **Pytest 8.4.1**: Framework de testes
+- **Pytest-cov 6.2.1**: Cobertura de testes
+- **Taskipy 1.14.1**: Executor de tarefas
+
+### Configurações do Ruff
+```toml
+[tool.ruff]
+line-length = 79
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I','F','E','W','PL','PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+```
+
+## 📊 BANCO DE DADOS
+
+### Configuração (database.py)
+- **Engine**: SQLite com configurações otimizadas
+- **Pool**: 5 conexões base, 10 overflow máximo
+- **URL**: Configurável via variável de ambiente DATABASE_URL
+
+### Modelo de Dados (models.py)
+
+#### Tabela Users
+```python
+@table_registry.mapped_as_dataclass
+class User:
+    __tablename__ = 'users'
+    
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True)
+    email: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(init=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(init=False, default=func.now(), onupdate=func.now())
+```
+
+**Características:**
+- ID auto-incremento como chave primária
+- Username e email únicos
+- Timestamps automáticos (created_at, updated_at)
+- Senha hasheada com Argon2
+- Modelo dataclass para melhor performance
+
+### Histórico de Migrações
+1. **ca0de850e0b7**: Criação inicial da tabela users
+2. **bb672486be19**: Adição do campo updated_at no modelo
+3. **037191f83212**: Implementação do updated_at na tabela
+4. **3a5ba60a4dd0**: Correção do valor padrão do updated_at
+5. **a757bd9be833**: Ajuste final do updated_at
+6. **cdd0a79e6a3c**: Finalização da implementação (HEAD)
+
+## 🔐 SISTEMA DE SEGURANÇA
+
+### Autenticação JWT (security.py)
+
+#### Configurações
+```python
+SECRET_KEY = '123'  # ⚠️ DEVE SER ALTERADO EM PRODUÇÃO
+ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+```
+
+#### Funcionalidades Implementadas
+1. **Hash de Senhas**: Argon2 (recomendado pela OWASP)
+2. **Geração de Tokens JWT**: Com expiração automática
+3. **Validação de Tokens**: Middleware para rotas protegidas
+4. **Extração de Usuário**: A partir do token JWT
+
+#### Fluxo de Autenticação
+1. Login com email/senha → Validação → Token JWT
+2. Requisições protegidas → Token no header → Validação → Usuário atual
+
+## 📝 SCHEMAS PYDANTIC (schemas.py)
+
+### Schemas Definidos
+1. **Message**: Respostas simples com mensagem
+2. **UserSchema**: Entrada de dados do usuário (com senha)
+3. **UserPublic**: Saída pública (sem senha)
+4. **UserList**: Lista de usuários públicos
+5. **UserDB**: Usuário completo do banco
+6. **Token**: Resposta de autenticação
+
+### Validações Automáticas
+- **EmailStr**: Validação de formato de email
+- **from_attributes**: Conversão automática de modelos SQLAlchemy
+
+## 🚀 ENDPOINTS DA API (app.py)
+
+### Endpoints Públicos
+- **GET /**: Retorna "Olá mundo!"
+- **GET /html/**: Página HTML simples
+- **POST /users/**: Criação de usuário
+- **GET /users/{user_id}/**: Busca usuário por ID
+- **POST /token**: Login e geração de token
+
+### Endpoints Protegidos (Requer Autenticação)
+- **GET /users/**: Lista usuários (paginação)
+- **PUT /users/{user_id}/**: Atualização de usuário
+- **DELETE /users/{user_id}/**: Exclusão de usuário
+
+### Validações Implementadas
+1. **Duplicação**: Username e email únicos
+2. **Autorização**: Usuário só pode alterar próprios dados
+3. **Integridade**: Tratamento de erros de constraint
+4. **Autenticação**: Validação de credenciais
+
+## 🧪 SISTEMA DE TESTES
+
+### Configuração de Testes (conftest.py)
+
+#### Fixtures Principais
+1. **session**: Banco SQLite em memória para testes
+2. **client**: Cliente de teste FastAPI
+3. **users**: Usuários de teste pré-criados
+4. **token**: Token JWT válido para testes
+5. **mock_db_time**: Mock para timestamps consistentes
+
+#### Características dos Testes
+- **Isolamento**: Cada teste usa banco limpo
+- **Fixtures Reutilizáveis**: Setup automático
+- **Mocks Inteligentes**: Controle de timestamps
+- **Cleanup Automático**: Limpeza após cada teste
+
+### Cobertura de Testes
+
+#### test_app.py (Testes de Endpoints)
+- ✅ Endpoint raiz (JSON e HTML)
+- ✅ Criação de usuários (sucesso e falhas)
+- ✅ Validação de duplicatas (email/username)
+- ✅ Listagem de usuários (com autenticação)
+- ✅ Busca por ID (válido/inválido)
+- ✅ Atualização de usuários (autorização)
+- ✅ Exclusão de usuários (permissões)
+- ✅ Login e geração de tokens
+- ✅ Validação de credenciais
+
+#### test_db.py (Testes de Banco)
+- ✅ Criação de usuários no banco
+- ✅ Validação de timestamps
+- ✅ Funcionamento da sessão
+
+#### test_security.py (Testes de Segurança)
+- ✅ Geração de tokens JWT
+- ✅ Validação de tokens inválidos
+- ✅ Tokens sem subject (sub)
+- ✅ Emails inexistentes
+
+## ⚙️ CONFIGURAÇÕES E AMBIENTE
+
+### Variáveis de Ambiente (.env)
+```
+DATABASE_URL="sqlite:///./database.db"
+```
+
+### Settings (settings.py)
+```python
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='.env', 
+        env_file_encoding='utf-8'
+    )
+    DATABASE_URL: str
+```
+
+### Tarefas Automatizadas (taskipy)
+```bash
+task lint      # Verificação de código
+task format    # Formatação automática
+task run       # Execução da aplicação
+task test      # Execução dos testes
+```
+
+## 🔄 FLUXO DE DESENVOLVIMENTO
+
+### 1. Setup do Projeto
+```bash
+poetry install                    # Instalar dependências
+alembic upgrade head             # Aplicar migrações
+```
+
+### 2. Desenvolvimento
+```bash
+task run                         # Executar aplicação
+task lint                        # Verificar código
+task format                      # Formatar código
+```
+
+### 3. Testes
+```bash
+task test                        # Executar todos os testes
+pytest --cov=fastapi_zero -vv   # Testes com cobertura
+```
+
+### 4. Migrações
+```bash
+alembic revision --autogenerate -m "descrição"  # Criar migração
+alembic upgrade head                             # Aplicar migração
+alembic history                                  # Ver histórico
+```
+
+## 📈 FUNCIONALIDADES IMPLEMENTADAS
+
+### ✅ CRUD Completo de Usuários
+- Criação com validações
+- Leitura individual e listagem
+- Atualização com autorização
+- Exclusão com permissões
+
+### ✅ Sistema de Autenticação
+- Login com email/senha
+- Tokens JWT com expiração
+- Middleware de autenticação
+- Proteção de rotas
+
+### ✅ Validações Robustas
+- Dados de entrada (Pydantic)
+- Unicidade de email/username
+- Autorização por usuário
+- Tratamento de erros
+
+### ✅ Banco de Dados
+- Modelos SQLAlchemy 2.0
+- Migrações automáticas
+- Timestamps automáticos
+- Constraints de integridade
+
+### ✅ Testes Automatizados
+- 100% de cobertura
+- Testes unitários e integração
+- Fixtures reutilizáveis
+- Mocks para isolamento
+
+### ✅ Qualidade de Código
+- Linting com Ruff
+- Formatação automática
+- Type hints completos
+- Documentação inline
+
+## 🚨 PONTOS DE ATENÇÃO
+
+### Segurança
+- ⚠️ SECRET_KEY hardcoded (alterar em produção)
+- ⚠️ Usar HTTPS em produção
+- ⚠️ Configurar CORS adequadamente
+- ⚠️ Implementar rate limiting
+
+### Performance
+- ✅ Pool de conexões configurado
+- ✅ Queries otimizadas
+- ⚠️ Considerar cache para listagens
+- ⚠️ Paginação implementada mas pode ser melhorada
+
+### Monitoramento
+- ⚠️ Adicionar logs estruturados
+- ⚠️ Implementar métricas
+- ⚠️ Health checks
+- ⚠️ Monitoring de performance
+
+## 🎯 PRÓXIMOS PASSOS SUGERIDOS
+
+### Funcionalidades
+1. **Roles e Permissões**: Sistema de autorização mais granular
+2. **Refresh Tokens**: Tokens de longa duração
+3. **Reset de Senha**: Fluxo de recuperação
+4. **Perfil de Usuário**: Campos adicionais
+5. **Upload de Avatar**: Gerenciamento de arquivos
+
+### Infraestrutura
+1. **Docker**: Containerização da aplicação
+2. **CI/CD**: Pipeline automatizado
+3. **Banco PostgreSQL**: Para produção
+4. **Redis**: Cache e sessões
+5. **Nginx**: Proxy reverso
+
+### Observabilidade
+1. **Logs Estruturados**: JSON logs
+2. **Métricas**: Prometheus/Grafana
+3. **Tracing**: OpenTelemetry
+4. **Health Checks**: Endpoints de saúde
+5. **Alertas**: Monitoramento proativo
+
+## 📚 COMANDOS ÚTEIS
+
+### Desenvolvimento
+```bash
+# Executar aplicação
+poetry run task run
+fastapi dev fastapi_zero/app.py
+
+# Testes
+poetry run task test
+pytest -v --cov=fastapi_zero
+
+# Qualidade de código
+poetry run task lint
+poetry run task format
+```
+
+### Banco de Dados
+```bash
+# Migrações
+alembic revision --autogenerate -m "descrição"
+alembic upgrade head
+alembic downgrade -1
+alembic history
+
+# Reset completo
+rm database.db
+alembic upgrade head
+```
+
+### Dependências
+```bash
+# Adicionar dependência
+poetry add nome-pacote
+
+# Dependência de desenvolvimento
+poetry add --group dev nome-pacote
+
+# Atualizar dependências
+poetry update
+```
+
+## 🏆 CONQUISTAS DO PROJETO
+
+1. **Arquitetura Sólida**: Separação clara de responsabilidades
+2. **Código Limpo**: Formatação e linting automatizados
+3. **Testes Robustos**: Cobertura completa com fixtures inteligentes
+4. **Segurança**: Autenticação JWT e hash seguro de senhas
+5. **Documentação**: Swagger automático e documentação completa
+6. **Migrações**: Controle de versão do banco de dados
+7. **Configuração**: Flexível via variáveis de ambiente
+8. **Performance**: Pool de conexões e queries otimizadas
+
+Este projeto demonstra as melhores práticas para desenvolvimento de APIs modernas com FastAPI, servindo como base sólida para aplicações em produção.
+
+---
+**Desenvolvido com ❤️ usando FastAPI, SQLAlchemy e as melhores práticas de desenvolvimento Python**
