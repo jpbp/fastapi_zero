@@ -33,7 +33,7 @@ extend-exclude = ['migrations']
 
 [tool.ruff.lint]
 preview = true
-select = ['I','F','E','W','PL','PT']
+select = ['I','F','E','W','PL','PT','FAST']
 
 [tool.ruff.format]
 preview = true
@@ -49,5 +49,5 @@ pre_format = 'ruff check --fix'
 format = 'ruff format .'
 run = 'fastapi dev fastapi_zero/app.py'
 pre_test = 'task lint'
-test = 'pytest -s --cov=fastapi_zero -vv'
+test = 'pytest -s -x --cov=fastapi_zero -vv'
 post_test = 'coverage html'
