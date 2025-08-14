@@ -1,9 +1,9 @@
-from sqlalchemy import create_engine
+from sqlalchemy.ext import create_async_engine, AsyncSession
 from sqlalchemy.orm import Session
 
 from fastapi_zero.settings import Settings
 
-engine = create_engine(
+engine = create_async_engine(
     Settings().DATABASE_URL,
     connect_args={'check_same_thread': False},
     pool_pre_ping=True,
@@ -12,6 +12,6 @@ engine = create_engine(
 )
 
 
-def get_session():
-    with Session(engine) as session:
+async def get_session():
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
