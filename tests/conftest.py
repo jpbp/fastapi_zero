@@ -4,7 +4,8 @@ from datetime import datetime
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import  event
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -13,7 +14,7 @@ from fastapi_zero.database import get_session
 from fastapi_zero.models import User, table_registry
 from fastapi_zero.security import get_passaword_hash
 from fastapi_zero.settings import Settings
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
 
 @pytest.fixture
 def client(session: Session):
@@ -29,18 +30,20 @@ def client(session: Session):
 @pytest_asyncio.fixture
 async def session():
     engine = create_async_engine(
-        'sqlite:///:memory:',
+        'sqlite+aiosqlite:///:memory:',
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
         echo=False,
     )
-    table_registry.metadata.create_all(engine)
 
-    async with AsyncSession(engine) as session:
+    async with engine.begin() as conn:
+        await conn.run_sync(table_registry.metadata.create_all)
+
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
-    table_registry.metadata.drop_all(engine)
-    engine.dispose()  # Fecha todas as conexoes do pool
+    async with engine.begin() as conn:
+        await conn.run_sync(table_registry.metadata.drop_all)
 
 
 @contextmanager
@@ -61,7 +64,7 @@ def mock_db_time():
 
 
 @pytest.fixture
-def users(session: Session):
+def users(session: AsyncSession):
     password1 = 'senha-da-ana'
     user1 = User(
         username='ana',

@@ -1,15 +1,8 @@
-from sqlalchemy.ext import create_async_engine, AsyncSession
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from fastapi_zero.settings import Settings
 
-engine = create_async_engine(
-    Settings().DATABASE_URL,
-    connect_args={'check_same_thread': False},
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-)
+engine = create_async_engine(Settings().DATABASE_URL)
 
 
 async def get_session():
