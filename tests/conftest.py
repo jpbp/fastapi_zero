@@ -2,8 +2,9 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import  event
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -12,7 +13,7 @@ from fastapi_zero.database import get_session
 from fastapi_zero.models import User, table_registry
 from fastapi_zero.security import get_passaword_hash
 from fastapi_zero.settings import Settings
-
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 @pytest.fixture
 def client(session: Session):
@@ -25,9 +26,9 @@ def client(session: Session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def session():
-    engine = create_engine(
+@pytest_asyncio.fixture
+async def session():
+    engine = create_async_engine(
         'sqlite:///:memory:',
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
@@ -35,7 +36,7 @@ def session():
     )
     table_registry.metadata.create_all(engine)
 
-    with Session(engine) as session:
+    async with AsyncSession(engine) as session:
         yield session
 
     table_registry.metadata.drop_all(engine)
