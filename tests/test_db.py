@@ -35,7 +35,7 @@ async def test_create_user(session: AsyncSession, mock_db_time):
 #     session = next(session_generator)
 
 #     # Verifica se e uma instancia de Session
-#     assert isinstance(session, Session)
+#     assert isinstance(session, AsyncSession)
 
 #     # Verifica se a sessao esta ativa
 #     assert session.is_active
