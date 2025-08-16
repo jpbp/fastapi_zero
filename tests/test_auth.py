@@ -52,4 +52,34 @@ def test_token_expired_after_time(client, user):
                 'password': 'wrongpass',
             },
         )
-        print(response.status_code)
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.json() == {'detail': 'Could not validate credentials'}
+
+
+def test_refresh_token(client, user, token):
+    response = client.post(
+        '/auth/refresh_token',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    token_refreshed = response.json()
+    assert response.status_code == HTTPStatus.OK
+    assert 'access_token' in token_refreshed
+    assert token_refreshed['token_type'] == 'Bearer'
+
+
+def test_refresh_token_expired_after_time(client, user):
+    with freeze_time('2025-12-31 12:00:00'):
+        response = client.post(
+            'auth/token',
+            data={'username': user.email, 'password': user.clean_password},
+        )
+        token = response.json()['access_token']
+
+    with freeze_time('2025-12-31 12:31:00'):
+        response = client.post(
+            '/auth/refresh_token',
+            headers={'Authorization': f'Bearer {token}'},
+        )
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.json() == {'detail': 'Could not validate credentials'}
