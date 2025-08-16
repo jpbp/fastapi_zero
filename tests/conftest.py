@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from datetime import datetime
 
+import factory
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -63,33 +64,48 @@ def mock_db_time():
     return _mock_db_time
 
 
+# @pytest_asyncio.fixture
+# async def users(session: AsyncSession):
+#     password0 = 'senha-do-teste0'
+#     user0 = UserFactory(password = get_passaword_hash(password0))
+#     password1 = 'senha-do-teste1'
+#     user1 = UserFactory(password = get_passaword_hash(password1))
+#     session.add(user0)
+#     session.add(user1)
+#     await session.commit()
+#     await session.refresh(user0)
+#     await session.refresh(user1)
+#     user0.clean_password = password1
+#     return [user0, user1]
+
+
 @pytest_asyncio.fixture
-async def users(session: AsyncSession):
-    password1 = 'senha-da-ana'
-    user1 = User(
-        username='ana',
-        email='ana@example.com',
-        password=get_passaword_hash(password1),
-    )
-    user2 = User(
-        username='jp',
-        email='jp@example.com',
-        password=get_passaword_hash('senha-do-jp'),
-    )
-    session.add(user1)
-    session.add(user2)
+async def user(session: AsyncSession):
+    password = 'senha-do-teste'
+    user = UserFactory(password=get_passaword_hash(password))
+    session.add(user)
     await session.commit()
-    await session.refresh(user1)
-    await session.refresh(user2)
-    user1.clean_password = password1
-    return [user1, user2]
+    await session.refresh(user)
+    user.clean_password = password
+    return user
+
+
+@pytest_asyncio.fixture
+async def other_user(session: AsyncSession):
+    password = 'senha-do-teste'
+    user = UserFactory(password=get_passaword_hash(password))
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    user.clean_password = password
+    return user
 
 
 @pytest.fixture
-def token(client, users):
+def token(client, user):
     response = client.post(
         '/auth/token',
-        data={'username': users[0].email, 'password': users[0].clean_password},
+        data={'username': user.email, 'password': user.clean_password},
     )
     return response.json()['access_token']
 
@@ -97,3 +113,12 @@ def token(client, users):
 @pytest.fixture
 def settings():
     return Settings()
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f'test{n}')
+    email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
+    password = factory.LazyAttribute(lambda obj: f'{obj.username}@example.com')

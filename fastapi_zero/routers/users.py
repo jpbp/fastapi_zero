@@ -117,6 +117,6 @@ async def delete_user(
         raise HTTPException(
             detail='Not enough permission!', status_code=HTTPStatus.FORBIDDEN
         )
-    session.delete(current_user)
+    await session.delete(current_user)
     await session.commit()
     return {'message': 'User Deleted!'}
