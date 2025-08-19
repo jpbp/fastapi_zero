@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from fastapi_zero.routers import auth, users
+from fastapi_zero.routers import auth, users, todos
 from fastapi_zero.schemas import (
     Message,
 )
@@ -22,6 +22,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(todos.router)
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Message)
