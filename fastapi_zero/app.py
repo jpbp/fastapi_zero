@@ -1,10 +1,10 @@
 from http import HTTPStatus
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
-from fastapi_zero.routers import auth, users, todos
+from fastapi_zero.routers import auth, todos, users
 from fastapi_zero.schemas import (
     Message,
 )
@@ -14,10 +14,10 @@ app = FastAPI(title='Minha Api Bala!')
 # Configuração CORS para permitir o frontend React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL do frontend React
+    allow_origins=['http://localhost:3000'],  # URL do frontend React
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
 app.include_router(auth.router)
