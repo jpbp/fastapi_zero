@@ -38,16 +38,20 @@ async def list_todos(
     filter_todos: Annotated[FilterTodo, Query()],
 ):
     query = select(Todo).where(Todo.user_id == user.id)
-    
+
     if filter_todos.title:
-        query  = query.filter(Todo.title.contains(filter_todos.title))
-        
+        query = query.filter(Todo.title.contains(filter_todos.title))
+
     if filter_todos.description:
-        query  = query.filter(Todo.description.contains(filter_todos.description))
-    
+        query = query.filter(
+            Todo.description.contains(filter_todos.description)
+        )
+
     if filter_todos.state:
-        query  = query.filter(Todo.state == filter_todos.state)
-    
+        query = query.filter(Todo.state == filter_todos.state)
+
     print(query)
-    todos = await session.scalars(query.offset(filter_todos.offset).limit(filter_todos.limit))
+    todos = await session.scalars(
+        query.offset(filter_todos.offset).limit(filter_todos.limit)
+    )
     return {'todos': todos}
