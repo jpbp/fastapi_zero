@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi_zero.database import get_session
 from fastapi_zero.models import Todo, User
-from fastapi_zero.schemas import FilterPage, TodoList, TodoPublic, TodoSchema
+from fastapi_zero.schemas import FilterTodo, TodoList, TodoPublic, TodoSchema
 from fastapi_zero.security import get_current_user
 
 router = APIRouter(prefix='/todos', tags=['TODOS'])
@@ -32,16 +32,22 @@ async def create_todo(todo: TodoSchema, session: Session, user: CurrentUser):
 
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=TodoList)
-async def get_todo(
+async def list_todos(
     session: Session,
     user: CurrentUser,
-    filter_todos: Annotated[FilterPage, Query()],
+    filter_todos: Annotated[FilterTodo, Query()],
 ):
-    todos = await session.scalars(
-        select(Todo)
-        .join(User)
-        .where(User.id == user.id)
-        .limit(filter_todos.limit)
-        .offset(filter_todos.offset)
-    )
+    query = select(Todo).where(Todo.user_id == user.id)
+    
+    if filter_todos.title:
+        query  = query.filter(Todo.title.contains(filter_todos.title))
+        
+    if filter_todos.description:
+        query  = query.filter(Todo.description.contains(filter_todos.description))
+    
+    if filter_todos.state:
+        query  = query.filter(Todo.state == filter_todos.state)
+    
+    print(query)
+    todos = await session.scalars(query.offset(filter_todos.offset).limit(filter_todos.limit))
     return {'todos': todos}

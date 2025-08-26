@@ -38,6 +38,12 @@ class FilterPage(BaseModel):
     limit: int = Field(le=10, default=10)
 
 
+class FilterTodo(FilterPage):
+    title: str | None = Field(default=None, min_length=3, max_length=20)
+    description: str | None = None
+    state: TodoState | None = None
+
+
 class TodoSchema(BaseModel):
     title: str
     description: str

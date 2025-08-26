@@ -37,6 +37,7 @@ class User:
         init=False, cascade='all, delete-orphan', lazy='selectin'
     )
 
+
 @table_registry.mapped_as_dataclass
 class Todo:
     __tablename__ = 'todos'

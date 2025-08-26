@@ -8,7 +8,7 @@ from fastapi_zero.models import User
 
 
 @pytest.mark.asyncio
-async def test_create_user(session: AsyncSession, mock_db_time):
+async def test_create_db_user(session: AsyncSession, mock_db_time):
     with mock_db_time(model=User) as time:
         new_user = User(
             username='test', email='test@test.com', password='secret'
