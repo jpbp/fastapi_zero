@@ -48,3 +48,109 @@ async def test_list_todos_should_return_5_todos(session, client, user, token):
     )
 
     assert len(response.json()['todos']) == except_todos
+
+
+@pytest.mark.asyncio
+async def test_list_todos_pagination_should_return_2_todos(
+    session, client, user, token
+):
+    except_todos = 2
+    session.add_all(TodoFactory.create_batch(5, user_id=user.id))
+    await session.commit()
+
+    response = client.get(
+        '/todos/?offset=1&limit=2',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+
+@pytest.mark.asyncio
+async def test_list_todos_filter_title_return(session, client, user, token):
+    except_todos = 5
+    session.add_all(
+        TodoFactory.create_batch(5, user_id=user.id, title='Test Todo Title 1')
+    )
+    session.add_all(TodoFactory.create_batch(5, user_id=user.id))
+    await session.commit()
+
+    response = client.get(
+        '/todos/?title=Test Todo Title 1',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+
+@pytest.mark.asyncio
+async def test_list_todos_filter_description_return(
+    session, client, user, token
+):
+    except_todos = 5
+    session.add_all(
+        TodoFactory.create_batch(
+            5, user_id=user.id, description='Test Todo Description 1'
+        )
+    )
+    session.add_all(TodoFactory.create_batch(5, user_id=user.id))
+    await session.commit()
+
+    response = client.get(
+        '/todos/?description=Test Todo Description 1',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+
+@pytest.mark.asyncio
+async def test_list_todos_filter_states_return(session, client, user, token):
+    except_todos = 5
+    session.add_all(
+        TodoFactory.create_batch(5, user_id=user.id, state='draft')
+    )
+    session.add_all(TodoFactory.create_batch(5, user_id=user.id, state='todo'))
+    session.add_all(
+        TodoFactory.create_batch(5, user_id=user.id, state='doing')
+    )
+    session.add_all(TodoFactory.create_batch(5, user_id=user.id, state='done'))
+    session.add_all(
+        TodoFactory.create_batch(5, user_id=user.id, state='trash')
+    )
+
+    await session.commit()
+    response = client.get(
+        '/todos/?state=todo',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+    response = client.get(
+        '/todos/?state=draft',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+    response = client.get(
+        '/todos/?state=doing',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+    response = client.get(
+        '/todos/?state=done',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
+
+    response = client.get(
+        '/todos/?state=trash',  # sem query
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert len(response.json()['todos']) == except_todos
