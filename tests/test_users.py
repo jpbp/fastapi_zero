@@ -67,8 +67,8 @@ def test_read_user_with_id_valid(client, user):
     response = client.get(f'/users/{user.id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'test16',
-        'email': 'test16@test.com',
+        'username': 'test18',
+        'email': 'test18@test.com',
         'id': 1,
     }
 

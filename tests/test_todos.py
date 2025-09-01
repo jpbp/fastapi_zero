@@ -154,3 +154,25 @@ async def test_list_todos_filter_states_return(session, client, user, token):
     )
 
     assert len(response.json()['todos']) == except_todos
+
+
+def test_delete_todo_error(client, token):
+    response = client.delete(
+        '/todos/10', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {'detail': 'Task not found.'}
+
+
+@pytest.mark.asyncio
+async def test_delete_todo(client, session, token, user):
+    todo = TodoFactory.create(user_id=user.id)
+    session.add(todo)
+    await session.commit()
+    response = client.delete(
+        f'/todos/{todo.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {'message': 'Task has been deleted successfuly'}
