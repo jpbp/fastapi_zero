@@ -176,3 +176,17 @@ async def test_delete_todo(client, session, token, user):
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'Task has been deleted successfuly'}
+
+
+@pytest.mark.asyncio
+async def test_delete_other_user_todo(client, session, token, other_user):
+    todo_other_user = TodoFactory.create(user_id=other_user.id)
+    session.add(todo_other_user)
+    await session.commit()
+
+    response = client.delete(
+        f'/todos/{todo_other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert response.status_code == HTTPStatus.NOT_FOUND

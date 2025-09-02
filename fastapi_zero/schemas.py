@@ -55,4 +55,10 @@ class TodoPublic(TodoSchema):
 
 
 class TodoList(BaseModel):
-    todos: list[TodoSchema]
+    todos: list[TodoPublic]
+
+
+class TodoUpdate(BaseModel):
+    title: str  = None
+    description: str  = None
+    state: TodoState  = None

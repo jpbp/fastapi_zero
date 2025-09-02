@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -8,6 +9,7 @@ from fastapi_zero.routers import auth, todos, users
 from fastapi_zero.schemas import (
     Message,
 )
+from fastapi_zero.settings import Settings
 
 app = FastAPI(title='Minha Api Bala!')
 
@@ -23,6 +25,12 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(todos.router)
+settings = Settings()
+
+
+@app.get('/healthcheck/', status_code=HTTPStatus.OK, response_model=Message)
+async def healthcheck():
+    return {'message': 'Health - OK'}
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=Message)
@@ -43,4 +51,5 @@ def read_root_html():
     </html>"""
 
 
-# implementar um health check...
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=settings.APP_PORT)
