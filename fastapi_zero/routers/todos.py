@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi_zero.database import get_session
@@ -78,31 +78,25 @@ async def delete_todo(session: Session, user: CurrentUser, todo_id: int):
     return {'message': 'Task has been deleted successfuly'}
 
 
-@router.patch('/{todo_id}', status_code=HTTPStatus.OK, response_model=TodoPublic)
+@router.patch(
+    '/{todo_id}', status_code=HTTPStatus.OK, response_model=TodoPublic
+)
 async def update_todo(
-    session: Session, 
-    user: CurrentUser, 
-    todo_update: TodoUpdate, 
-    todo_id: int
+    session: Session, user: CurrentUser, todo_update: TodoUpdate, todo_id: int
 ):
     todo_db = await session.scalar(
         select(Todo).where(Todo.user_id == user.id, Todo.id == todo_id)
     )
-    
+
     if not todo_db:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='Task not found.'
         )
-    
-    
-    if todo_update.title:
-        todo_db.title = todo_update.title
-        
-    if todo_update.description:
-        todo_db.description = todo_update.description
-    
-    if todo_update.state:
-        todo_db.state = todo_update.state
 
+    for key, value in todo_update.model_dump(exclude_unset=True).items():
+        setattr(todo_db, key, value)
+
+    session.add(todo_db)
     await session.commit()
+    await session.refresh(todo_db)
     return todo_db

@@ -190,3 +190,28 @@ async def test_delete_other_user_todo(client, session, token, other_user):
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_patch_todo_error(client, token):
+    response = client.patch(
+        '/todos/10',
+        headers={'Authorization': f'Bearer {token}'},
+        json={'tittle': 'teste1'},
+    )
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {'detail': 'Task not found.'}
+
+
+@pytest.mark.asyncio
+async def test_patch_todo(client, token, user, session):
+    todo = TodoFactory.create(user_id=user.id)
+    session.add(todo)
+    await session.commit()
+
+    response = client.patch(
+        f'/todos/{todo.id}',
+        headers={'Authorization': f'Bearer {token}'},
+        json={'title': 'teste!'},
+    )
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['title'] == 'teste!'
