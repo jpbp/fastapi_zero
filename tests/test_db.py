@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi_zero.models import User
+from fastapi_zero.models import Todo, User
 
 
 @pytest.mark.asyncio
@@ -29,20 +29,46 @@ async def test_create_db_user(session: AsyncSession, mock_db_time):
         }
 
 
-# @pytest.mark.asyncio
-# def test_get_session_returns_session():
-#     """Testa se get_session retorna uma instancia de Session valida."""
-#     session_generator = get_session()
-#     session = next(session_generator)
+@pytest.mark.asyncio
+async def test_create_db_todo(session: AsyncSession, mock_db_time, user):
+    with mock_db_time(model=Todo) as time:
+        new_todo = Todo(
+            description='teste', state='doing', title='teste', user_id=user.id
+        )
+        session.add(new_todo)
+        await session.commit()
+        todo = await session.scalar(
+            select(Todo).where(Todo.description == 'teste')
+        )
+        assert asdict(todo) == {
+            'id': 1,
+            'description': 'teste',
+            'title': 'teste',
+            'state': 'doing',
+            'created_at': time,
+            'updated_at': time,
+            'user_id': user.id,
+        }
 
-#     # Verifica se e uma instancia de Session
-#     assert isinstance(session, AsyncSession)
 
-#     # Verifica se a sessao esta ativa
-#     assert session.is_active
+@pytest.mark.asyncio
+async def test_enum_invalido(session: AsyncSession, user):
+    """Garante que um valor inválido no Enum de Todo gera erro.
 
-#     # Finaliza o generator para fechar a sessao
-#     try:
-#         next(session_generator)
-#     except StopIteration:
-#         pass  # Esperado quando o generator termina/exit
+    Para colunas Enum do SQLAlchemy, um valor inválido é validado no
+    bind/flush e a exceção propagada é um StatementError contendo a
+    mensagem "not among the defined enum values" (a causa original é
+    um LookupError interno do SQLAlchemy).
+    """
+    new_todo = Todo(
+        description='teste',
+        state='batatinha',  # inválido para TodoState
+        title='teste',
+        user_id=user.id,
+    )
+    session.add(new_todo)
+    await session.commit()
+    with pytest.raises(LookupError):
+        await session.scalar(select(Todo).where(Todo.description == 'teste'))
+
+    await session.flush()
